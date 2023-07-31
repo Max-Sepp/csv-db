@@ -228,87 +228,61 @@ func (tree *Btree) Delete(key int) {
 	}
 	// root handling of breaking tree conditions
 	if balancingRequired {
-		if tree.root.child[i].leaf {
-			// check left sibling
-			if i > 0 && len(tree.root.child[i-1].keys) > tree.minElements {
-				// rotating keys around to balance tree
-				tree.root.child[i].keys = insertIntoSlice(tree.root.child[i].keys, 0, tree.root.keys[i-1])
-				tree.root.keys[i-1] = tree.root.child[i-1].keys[len(tree.root.child[i-1].keys)-1]
-				tree.root.child[i-1].keys = popFromSlice(tree.root.child[i-1].keys, len(tree.root.child[i-1].keys)-1)
+		// check left sibling
+		if i > 0 && len(tree.root.child[i-1].keys) > tree.minElements {
+			// rotating keys around to balance tree
+			tree.root.child[i].keys = insertIntoSlice(tree.root.child[i].keys, 0, tree.root.keys[i-1])
+			tree.root.keys[i-1] = tree.root.child[i-1].keys[len(tree.root.child[i-1].keys)-1]
+			tree.root.child[i-1].keys = popFromSlice(tree.root.child[i-1].keys, len(tree.root.child[i-1].keys)-1)
 
-			} else if i < len(tree.root.keys) && len(tree.root.child[i+1].keys) > tree.minElements {
-				// rotating keys areound to balance tree
-				tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.keys[i])
-				tree.root.keys[i] = tree.root.child[i+1].keys[0]
-				tree.root.child[i+1].keys = popFromSlice(tree.root.child[i+1].keys, 0)
-
-			} else {
-				if i > 0 {
-					tree.root.child[i-1].keys = append(tree.root.child[i-1].keys, tree.root.keys[i-1])
-					tree.root.keys = popFromSlice(tree.root.keys, i-1)
-					tree.root.child[i-1].keys = append(tree.root.child[i-1].keys, tree.root.child[i].keys...)
-
-					tree.root.child = popFromSlice(tree.root.child, i)
-				} else {
-					tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.keys[i])
-					tree.root.keys = popFromSlice(tree.root.keys, i)
-					tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.child[i+1].keys...)
-
-					tree.root.child = popFromSlice(tree.root.child, i+1)
-				}
-
-				if len(tree.root.keys) <= 0 {
-					tree.root = tree.root.child[0]
-				}
-			}
-		} else {
-			// check left sibling
-			if i > 0 && len(tree.root.child[i-1].keys) > tree.minElements {
-				// rotating keys around to balance tree
-				tree.root.child[i].keys = insertIntoSlice(tree.root.child[i].keys, 0, tree.root.keys[i-1])
-				tree.root.keys[i-1] = tree.root.child[i-1].keys[len(tree.root.child[i-1].keys)-1]
-				tree.root.child[i-1].keys = popFromSlice(tree.root.child[i-1].keys, len(tree.root.child[i-1].keys)-1)
-
+			if !tree.root.child[i].leaf {
 				// handling child node
 				tree.root.child[i].child = insertIntoSlice(tree.root.child[i].child, 0, tree.root.child[i-1].child[len(tree.root.child[i-1].child)-1])
 				tree.root.child[i-1].child = popFromSlice(tree.root.child[i-1].child, len(tree.root.child[i-1].child)-1)
+			}
 
-			} else if i < len(tree.root.keys) && len(tree.root.child[i+1].keys) > tree.minElements {
-				// rotating keys around to balance tree
-				tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.keys[i])
-				tree.root.keys[i] = tree.root.child[i+1].keys[0]
-				tree.root.child[i+1].keys = popFromSlice(tree.root.child[i+1].keys, 0)
+		} else if i < len(tree.root.keys) && len(tree.root.child[i+1].keys) > tree.minElements {
+			// rotating keys around to balance tree
+			tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.keys[i])
+			tree.root.keys[i] = tree.root.child[i+1].keys[0]
+			tree.root.child[i+1].keys = popFromSlice(tree.root.child[i+1].keys, 0)
 
+			if !tree.root.child[i].leaf {
 				// handling child node
 				tree.root.child[i].child = append(tree.root.child[i].child, tree.root.child[i+1].child[0])
 				tree.root.child[i+1].child = popFromSlice(tree.root.child[i+1].child, 0)
+			}
 
-			} else {
-				if i > 0 {
-					tree.root.child[i-1].keys = append(tree.root.child[i-1].keys, tree.root.keys[i-1])
-					tree.root.keys = popFromSlice(tree.root.keys, i-1)
-					tree.root.child[i-1].keys = append(tree.root.child[i-1].keys, tree.root.child[i].keys...)
+		} else {
+			if i > 0 {
+				tree.root.child[i-1].keys = append(tree.root.child[i-1].keys, tree.root.keys[i-1])
+				tree.root.keys = popFromSlice(tree.root.keys, i-1)
+				tree.root.child[i-1].keys = append(tree.root.child[i-1].keys, tree.root.child[i].keys...)
 
+				if !tree.root.child[i].leaf {
 					// handling children
 					tree.root.child[i-1].child = append(tree.root.child[i-1].child, tree.root.child[i].child...)
+				}
 
-					tree.root.child = popFromSlice(tree.root.child, i)
-				} else {
-					tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.keys[i])
-					tree.root.keys = popFromSlice(tree.root.keys, i)
-					tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.child[i+1].keys...)
+				tree.root.child = popFromSlice(tree.root.child, i)
+			} else {
+				tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.keys[i])
+				tree.root.keys = popFromSlice(tree.root.keys, i)
+				tree.root.child[i].keys = append(tree.root.child[i].keys, tree.root.child[i+1].keys...)
 
+				if !tree.root.child[i].leaf {
 					// handling children
 					tree.root.child[i].child = append(tree.root.child[i].child, tree.root.child[i+1].child...)
-
-					tree.root.child = popFromSlice(tree.root.child, i+1)
 				}
 
-				if len(tree.root.keys) <= 0 {
-					tree.root = tree.root.child[0]
-				}
+				tree.root.child = popFromSlice(tree.root.child, i+1)
+			}
+
+			if len(tree.root.keys) <= 0 {
+				tree.root = tree.root.child[0]
 			}
 		}
+
 	}
 }
 
@@ -366,87 +340,58 @@ func (tree *Btree) deleteHelper(treeNode *node, key int) bool {
 	}
 	// root handling of breaking tree conditions
 	if balancingRequired {
-		if treeNode.child[i].leaf {
-			// check left sibling
-			if i > 0 && len(treeNode.child[i-1].keys) > tree.minElements {
-				// rotating keys around to balance tree
-				treeNode.child[i].keys = insertIntoSlice(treeNode.child[i].keys, 0, treeNode.keys[i-1])
-				treeNode.keys[i-1] = treeNode.child[i-1].keys[len(treeNode.child[i-1].keys)-1]
-				treeNode.child[i-1].keys = popFromSlice(treeNode.child[i-1].keys, len(treeNode.child[i-1].keys)-1)
+		// check left sibling
+		if i > 0 && len(treeNode.child[i-1].keys) > tree.minElements {
+			// rotating keys around to balance tree
+			treeNode.child[i].keys = insertIntoSlice(treeNode.child[i].keys, 0, treeNode.keys[i-1])
+			treeNode.keys[i-1] = treeNode.child[i-1].keys[len(treeNode.child[i-1].keys)-1]
+			treeNode.child[i-1].keys = popFromSlice(treeNode.child[i-1].keys, len(treeNode.child[i-1].keys)-1)
 
-			} else if i < len(treeNode.keys) && len(treeNode.child[i+1].keys) > tree.minElements {
-				// rotating keys areound to balance tree
-				treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.keys[i])
-				treeNode.keys[i] = treeNode.child[i+1].keys[0]
-				treeNode.child[i+1].keys = popFromSlice(treeNode.child[i+1].keys, 0)
-
-			} else {
-				if i > 0 {
-					treeNode.child[i-1].keys = append(treeNode.child[i-1].keys, treeNode.keys[i-1])
-					treeNode.keys = popFromSlice(treeNode.keys, i-1)
-					treeNode.child[i-1].keys = append(treeNode.child[i-1].keys, treeNode.child[i].keys...)
-
-					treeNode.child = popFromSlice(treeNode.child, i)
-				} else {
-					treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.keys[i])
-					treeNode.keys = popFromSlice(treeNode.keys, i)
-					treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.child[i+1].keys...)
-
-					treeNode.child = popFromSlice(treeNode.child, i+1)
-				}
-
-				if len(treeNode.keys) < tree.minElements {
-					return true
-				}
-			}
-		} else {
-			// check left sibling
-			if i > 0 && len(treeNode.child[i-1].keys) > tree.minElements {
-				// rotating keys around to balance tree
-				treeNode.child[i].keys = insertIntoSlice(treeNode.child[i].keys, 0, treeNode.keys[i-1])
-				treeNode.keys[i-1] = treeNode.child[i-1].keys[len(treeNode.child[i-1].keys)-1]
-				treeNode.child[i-1].keys = popFromSlice(treeNode.child[i-1].keys, len(treeNode.child[i-1].keys)-1)
-
+			if !treeNode.child[i].leaf {
 				// handling child treeNode
 				treeNode.child[i].child = insertIntoSlice(treeNode.child[i].child, 0, treeNode.child[i-1].child[len(treeNode.child[i-1].child)-1])
 				treeNode.child[i-1].child = popFromSlice(treeNode.child[i-1].child, len(treeNode.child[i-1].child)-1)
+			}
 
-			} else if i < len(treeNode.keys) && len(treeNode.child[i+1].keys) > tree.minElements {
-				// rotating keys areound to balance tree
-				treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.keys[i])
-				treeNode.keys[i] = treeNode.child[i+1].keys[0]
-				treeNode.child[i+1].keys = popFromSlice(treeNode.child[i+1].keys, 0)
+		} else if i < len(treeNode.keys) && len(treeNode.child[i+1].keys) > tree.minElements {
+			// rotating keys areound to balance tree
+			treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.keys[i])
+			treeNode.keys[i] = treeNode.child[i+1].keys[0]
+			treeNode.child[i+1].keys = popFromSlice(treeNode.child[i+1].keys, 0)
 
+			if !treeNode.child[i].leaf {
 				// handling child treeNode
 				treeNode.child[i].child = append(treeNode.child[i].child, treeNode.child[i+1].child[0])
 				treeNode.child[i+1].child = popFromSlice(treeNode.child[i+1].child, 0)
+			}
 
-			} else {
-				if i > 0 {
-					treeNode.child[i-1].keys = append(treeNode.child[i-1].keys, treeNode.keys[i-1])
-					treeNode.keys = popFromSlice(treeNode.keys, i-1)
-					treeNode.child[i-1].keys = append(treeNode.child[i-1].keys, treeNode.child[i].keys...)
+		} else {
+			if i > 0 {
+				treeNode.child[i-1].keys = append(treeNode.child[i-1].keys, treeNode.keys[i-1])
+				treeNode.keys = popFromSlice(treeNode.keys, i-1)
+				treeNode.child[i-1].keys = append(treeNode.child[i-1].keys, treeNode.child[i].keys...)
 
+				if !treeNode.child[i].leaf {
 					// handling children
 					treeNode.child[i-1].child = append(treeNode.child[i-1].child, treeNode.child[i].child...)
+				}
+				treeNode.child = popFromSlice(treeNode.child, i)
+			} else {
+				treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.keys[i])
+				treeNode.keys = popFromSlice(treeNode.keys, i)
+				treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.child[i+1].keys...)
 
-					treeNode.child = popFromSlice(treeNode.child, i)
-				} else {
-					treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.keys[i])
-					treeNode.keys = popFromSlice(treeNode.keys, i)
-					treeNode.child[i].keys = append(treeNode.child[i].keys, treeNode.child[i+1].keys...)
-
+				if !treeNode.child[i].leaf {
 					// handling children
 					treeNode.child[i].child = append(treeNode.child[i].child, treeNode.child[i+1].child...)
-
-					treeNode.child = popFromSlice(treeNode.child, i+1)
 				}
-
-				if len(treeNode.keys) < tree.minElements {
-					return true
-				}
-
+				treeNode.child = popFromSlice(treeNode.child, i+1)
 			}
+
+			if len(treeNode.keys) < tree.minElements {
+				return true
+			}
+
 		}
 	}
 	return false
