@@ -1,8 +1,8 @@
 package Btree
 
 type keyStruct struct {
-	key  int
-	data int
+	key    string
+	rowPtr int64
 }
 
 type node struct {
@@ -30,10 +30,10 @@ func New(maxElements int) *Btree {
 	return tree
 }
 
-func (tree *Btree) Insert(keyInt int, data int) {
+func (tree *Btree) Insert(keyStr string, rowPtr int64) {
 	key := keyStruct{
-		key:  keyInt,
-		data: data,
+		key:    keyStr,
+		rowPtr: rowPtr,
 	}
 	rebalanceRequired, middleKey, rightNode := tree.insertHelper(tree.root, key)
 
@@ -146,7 +146,7 @@ func (tree *Btree) insertHelper(treeNode *node, key keyStruct) (rebalanceRequire
 	}
 }
 
-func has(slice []keyStruct, key int) bool {
+func has(slice []keyStruct, key string) bool {
 	for _, i := range slice {
 		if key == i.key {
 			return true
@@ -166,7 +166,7 @@ func has(slice []keyStruct, key int) bool {
 // 	return popFromSlice[T](slice, i)
 // }
 
-func removeKeyFromSlice(slice []keyStruct, key int) []keyStruct {
+func removeKeyFromSlice(slice []keyStruct, key string) []keyStruct {
 	i := 0
 	for slice[i].key != key {
 		i++
@@ -177,7 +177,7 @@ func removeKeyFromSlice(slice []keyStruct, key int) []keyStruct {
 	return popFromSlice(slice, i)
 }
 
-func (tree *Btree) Delete(key int) {
+func (tree *Btree) Delete(key string) {
 	balancingRequired := false
 	i := 0
 	if !has(tree.root.keys, key) {
@@ -286,7 +286,7 @@ func (tree *Btree) Delete(key int) {
 	}
 }
 
-func (tree *Btree) deleteHelper(treeNode *node, key int) bool {
+func (tree *Btree) deleteHelper(treeNode *node, key string) bool {
 	balancingRequired := false
 	i := 0
 	if !has(treeNode.keys, key) {
