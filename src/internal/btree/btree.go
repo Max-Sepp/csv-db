@@ -1,4 +1,4 @@
-package Btree
+package btree
 
 type keyStruct struct {
 	key    string
@@ -17,10 +17,10 @@ type Btree struct {
 	minElements int
 }
 
-func New(maxElements int) *Btree {
+func New(order int) *Btree {
 	tree := new(Btree)
-	tree.maxElements = maxElements
-	tree.minElements = maxElements / 2
+	tree.maxElements = order - 1
+	tree.minElements = tree.maxElements / 2
 
 	tree.root = &node{
 		leaf:  true,
