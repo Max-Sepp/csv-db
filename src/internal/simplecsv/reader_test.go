@@ -75,6 +75,8 @@ func TestConsecutiveReads(t *testing.T) {
 		{"9", "John", "Fennell"},
 	}
 
+	correctOffset := []int{26, 40, 54, 68, 86, 104, 122, 138, 153, 172, 187}
+
 	output := [][]string{}
 
 	r, err := simplecsv.NewReader("test_data.csv")
@@ -85,7 +87,7 @@ func TestConsecutiveReads(t *testing.T) {
 
 	r.Reset()
 
-	for {
+	for i := 0; true; i++ {
 		out, err := r.Read()
 
 		if err == io.EOF {
@@ -97,10 +99,14 @@ func TestConsecutiveReads(t *testing.T) {
 		}
 
 		output = append(output, out)
+
+		if r.Offset != correctOffset[i] {
+			t.Error("Failed: did not have the correct offset")
+		}
 	}
 
 	if !Equal2DStringSlice(output, correctOutput) {
-		t.Error("Failed: did not give the correct output")
+		t.Error("Failed: did not give the correct return value")
 	}
 }
 
