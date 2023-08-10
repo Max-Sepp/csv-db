@@ -11,6 +11,7 @@ import (
 type CsvReader struct {
 	file   *os.File
 	reader *bufio.Reader
+	Offset int // the byte offset of the previous read if unknown / possible edge case will be -1
 }
 
 // NewReader retuns a new CsvReader. It returns the errors only of the opening of the file
@@ -34,9 +35,11 @@ func (reader *CsvReader) ReadLineAt(offset int64) ([]string, error) {
 		// check start of line
 		prevLineChar, err := reader.reader.ReadString('\n')
 		if err != nil {
+			reader.Reset()
 			return nil, err
 		}
 		if prevLineChar != "\n" {
+			reader.Reset()
 			return nil, errors.New("the byte offset does not begin with a row")
 		}
 	}
@@ -44,8 +47,11 @@ func (reader *CsvReader) ReadLineAt(offset int64) ([]string, error) {
 	ret, err := reader.reader.ReadString('\n')
 
 	if err != nil {
+		reader.Reset()
 		return nil, err
 	}
+
+	reader.Offset = int(offset) + len(ret)
 
 	ret = strings.TrimSuffix(ret, "\n")
 
@@ -62,21 +68,27 @@ func (reader *CsvReader) setReadOffset(offset int64) error {
 	_, err := reader.file.Seek(offset, io.SeekStart)
 
 	if err != nil {
+		reader.Offset = -1
 		return err
 	}
 
 	reader.reader.Reset(reader.file)
 
+	reader.Offset = int(offset)
+
 	return nil
 }
 
 // Read returns the the next line
+// if Read fails it does not reset Offset and leaves it unchanged
 func (reader *CsvReader) Read() ([]string, error) {
 	ret, err := reader.reader.ReadString('\n')
 
 	if err != nil {
 		return nil, err
 	}
+
+	reader.Offset = reader.Offset + len(ret)
 
 	ret = strings.TrimSuffix(ret, "\n")
 
