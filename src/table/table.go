@@ -9,14 +9,14 @@ import (
 )
 
 type Table struct {
-	reader        *simplecsv.CsvReader
+	reader        *simplecsv.CsvHandler
 	fields        []string
 	indexedFields []int // holds the indexs of the fields that are indexed
 	btrees        []*btree.Btree
 }
 
 func NewTable(fileName string, fieldsToIndex []string) (*Table, error) {
-	reader, err := simplecsv.NewReader(fileName)
+	reader, err := simplecsv.NewHandler(fileName)
 
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func NewTable(fileName string, fieldsToIndex []string) (*Table, error) {
 	fields, err := reader.Read()
 
 	if err == io.EOF {
-		return nil, errors.New("start of csv should contain field names of table")
+		return nil, errors.New("empty csv file")
 	}
 
 	indexedFields := make([]int, 0, len(fieldsToIndex))
@@ -72,7 +72,9 @@ func NewTable(fileName string, fieldsToIndex []string) (*Table, error) {
 	}, err
 }
 
-func (table *Table) FindByUnique(field string, key string) ([]string, error) {
+// Find first returns the first element that matches the key and the field.
+// if no record is found returns a nil string
+func (table *Table) FindFirst(field string, key string) ([]string, error) {
 	i := 0
 
 	for field != table.fields[i] && i < len(table.fields) {
@@ -87,9 +89,13 @@ func (table *Table) FindByUnique(field string, key string) ([]string, error) {
 		indexOfBtree++
 	}
 	if indexOfBtree == len(table.indexedFields) {
-		return nil, errors.New("field is not indexed in the table")
+		return table.findFirstUnindexed(i, key)
 	}
+	return table.findIndexed(indexOfBtree, key)
 
+}
+
+func (table *Table) findIndexed(indexOfBtree int, key string) ([]string, error) {
 	found, _, recordByteOffset := table.btrees[indexOfBtree].Find(key)
 
 	if !found {
@@ -103,6 +109,34 @@ func (table *Table) FindByUnique(field string, key string) ([]string, error) {
 	}
 
 	return data, nil
+}
+
+// fieldIndex is the index of the item we are searching for in the record i.e. is it the first second or third field in the record
+// returns nil if nothing is found
+func (table *Table) findFirstUnindexed(fieldIndex int, key string) ([]string, error) {
+	table.reader.Reset()
+
+	for {
+		record, err := table.reader.Read()
+
+		if err == io.EOF {
+			// we have reached the end of the file and not found the item in the field
+			return nil, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if record[fieldIndex] == key {
+			return record, nil
+		}
+	}
+}
+
+func (table *Table) Insert(record []string) error {
+
+	return nil
 }
 
 func findInSlice[T comparable](slice []T, value T) (int, error) {

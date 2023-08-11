@@ -8,7 +8,7 @@ import (
 )
 
 func TestReadLineAtNormalData(t *testing.T) {
-	r, err := simplecsv.NewReader("test_data.csv")
+	r, err := simplecsv.NewHandler("test_data_read.csv")
 
 	if err != nil {
 		t.Error(err)
@@ -46,7 +46,7 @@ func TestReadLineAtNormalData(t *testing.T) {
 }
 
 func TestReadLineAtErroneousData(t *testing.T) {
-	r, err := simplecsv.NewReader("test_data.csv")
+	r, err := simplecsv.NewHandler("test_data_read.csv")
 
 	if err != nil {
 		t.Error(err)
@@ -79,7 +79,7 @@ func TestConsecutiveReads(t *testing.T) {
 
 	output := [][]string{}
 
-	r, err := simplecsv.NewReader("test_data.csv")
+	r, err := simplecsv.NewHandler("test_data_read.csv")
 
 	if err != nil {
 		t.Error(err)
@@ -97,7 +97,6 @@ func TestConsecutiveReads(t *testing.T) {
 		if err != nil {
 			t.Error(out)
 		}
-
 		output = append(output, out)
 
 		if r.Offset != correctOffset[i] {
