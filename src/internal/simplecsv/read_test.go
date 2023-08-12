@@ -75,7 +75,7 @@ func TestConsecutiveReads(t *testing.T) {
 		{"9", "John", "Fennell"},
 	}
 
-	correctOffset := []int{26, 40, 54, 68, 86, 104, 122, 138, 153, 172, 187}
+	correctOffset := []int{0, 26, 40, 54, 68, 86, 104, 122, 138, 153, 172, 187}
 
 	output := [][]string{}
 
@@ -88,6 +88,11 @@ func TestConsecutiveReads(t *testing.T) {
 	r.Reset()
 
 	for i := 0; true; i++ {
+
+		if r.Offset != correctOffset[i] {
+			t.Error("Failed: did not have the correct offset")
+		}
+
 		out, err := r.Read()
 
 		if err == io.EOF {
@@ -98,10 +103,6 @@ func TestConsecutiveReads(t *testing.T) {
 			t.Error(out)
 		}
 		output = append(output, out)
-
-		if r.Offset != correctOffset[i] {
-			t.Error("Failed: did not have the correct offset")
-		}
 	}
 
 	if !Equal2DStringSlice(output, correctOutput) {

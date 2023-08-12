@@ -9,20 +9,20 @@ import (
 )
 
 type Table struct {
-	reader        *simplecsv.CsvHandler
+	handler       *simplecsv.CsvHandler
 	fields        []string
 	indexedFields []int // holds the indexs of the fields that are indexed
 	btrees        []*btree.Btree
 }
 
 func NewTable(fileName string, fieldsToIndex []string) (*Table, error) {
-	reader, err := simplecsv.NewHandler(fileName)
+	handler, err := simplecsv.NewHandler(fileName)
 
 	if err != nil {
 		return nil, err
 	}
 
-	fields, err := reader.Read()
+	fields, err := handler.Read()
 
 	if err == io.EOF {
 		return nil, errors.New("empty csv file")
@@ -48,10 +48,11 @@ func NewTable(fileName string, fieldsToIndex []string) (*Table, error) {
 	}
 
 	for {
-		offset := reader.Offset
-		record, err := reader.Read()
+		offset := handler.Offset
+		record, err := handler.Read()
 
 		if err == io.EOF {
+			handler.WriteOffset = offset
 			break
 		}
 
@@ -65,7 +66,7 @@ func NewTable(fileName string, fieldsToIndex []string) (*Table, error) {
 	}
 
 	return &Table{
-		reader:        reader,
+		handler:       handler,
 		fields:        fields,
 		indexedFields: indexedFields,
 		btrees:        btrees,
@@ -102,7 +103,7 @@ func (table *Table) findIndexed(indexOfBtree int, key string) ([]string, error) 
 		return nil, errors.New("record could not be found with that key")
 	}
 
-	data, err := table.reader.ReadLineAt(recordByteOffset)
+	data, err := table.handler.ReadLineAt(recordByteOffset)
 
 	if err != nil {
 		return nil, err
@@ -114,10 +115,10 @@ func (table *Table) findIndexed(indexOfBtree int, key string) ([]string, error) 
 // fieldIndex is the index of the item we are searching for in the record i.e. is it the first second or third field in the record
 // returns nil if nothing is found
 func (table *Table) findFirstUnindexed(fieldIndex int, key string) ([]string, error) {
-	table.reader.Reset()
+	table.handler.Reset()
 
 	for {
-		record, err := table.reader.Read()
+		record, err := table.handler.Read()
 
 		if err == io.EOF {
 			// we have reached the end of the file and not found the item in the field
@@ -135,6 +136,14 @@ func (table *Table) findFirstUnindexed(fieldIndex int, key string) ([]string, er
 }
 
 func (table *Table) Insert(record []string) error {
+
+	offset := table.handler.WriteOffset
+
+	table.handler.Append(record)
+
+	for i, v := range table.indexedFields {
+		table.btrees[i].Insert(record[v], int64(offset))
+	}
 
 	return nil
 }
