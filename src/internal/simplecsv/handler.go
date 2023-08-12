@@ -10,9 +10,10 @@ import (
 )
 
 type CsvHandler struct {
-	file   *os.File
-	reader *bufio.Reader
-	Offset int // the byte offset of the previous read if unknown / possible edge case will be -1
+	file        *os.File
+	reader      *bufio.Reader
+	Offset      int // the byte offset of the previous read if unknown / possible edge case will be -1
+	WriteOffset int
 }
 
 // NewHandler retuns a new CsvHandler. It returns the errors only of the opening of the file
@@ -87,11 +88,9 @@ func (reader *CsvHandler) Read() ([]string, error) {
 
 	if err != nil && err != io.EOF {
 		return nil, err
-	} else if err == io.EOF {
-		reader.Reset()
-	} else {
-		reader.Offset = reader.Offset + len(ret)
 	}
+	reader.Offset = reader.Offset + len(ret)
+
 	ret = strings.TrimSuffix(ret, "\n")
 
 	return strings.Split(ret, ","), err
@@ -108,6 +107,8 @@ func (handler *CsvHandler) Append(input []string) {
 	}
 
 	data = append(data, '\n')
+
+	handler.WriteOffset = handler.WriteOffset + len(data)
 
 	_, err := handler.file.Write(data)
 
