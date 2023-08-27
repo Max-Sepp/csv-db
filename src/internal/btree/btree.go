@@ -166,31 +166,35 @@ func has(slice []keyStruct, key string) bool {
 // 	return popFromSlice[T](slice, i)
 // }
 
-func removeKeyFromSlice(slice []keyStruct, key string) []keyStruct {
+func removeKeyFromSlice(slice []keyStruct, key string) ([]keyStruct, int64) {
 	i := 0
 	for slice[i].key != key {
 		i++
 		if i >= len(slice) {
-			return slice
+			return slice, -1
 		}
 	}
-	return popFromSlice(slice, i)
+
+	offset := slice[i].rowPtr
+	return popFromSlice(slice, i), offset
 }
 
-func (tree *Btree) Delete(key string) {
+func (tree *Btree) Delete(key string) int64 {
+	var offset int64 = -1
+
 	balancingRequired := false
 	i := 0
 	if !has(tree.root.keys, key) {
 		if tree.root.leaf {
-			return // handle error future problem
+			return -1 // handle error future problem
 		}
 		i = 0
 		for i < len(tree.root.keys) && key > tree.root.keys[i].key {
 			i++
 		}
-		balancingRequired = tree.deleteHelper(tree.root.child[i], key)
+		balancingRequired, offset = tree.deleteHelper(tree.root.child[i], key)
 	} else if tree.root.leaf {
-		tree.root.keys = removeKeyFromSlice(tree.root.keys, key)
+		tree.root.keys, offset = removeKeyFromSlice(tree.root.keys, key)
 	} else {
 		i = 0
 		for i < len(tree.root.child) && key != tree.root.keys[i].key {
@@ -218,12 +222,12 @@ func (tree *Btree) Delete(key string) {
 				inorderSuccessorNode.keys = popFromSlice(inorderSuccessorNode.keys, 0)
 			} else {
 				tree.root.keys[i] = inorderSuccessorNode.keys[0]
-				balancingRequired = tree.deleteHelper(tree.root.child[i+1], inorderSuccessorNode.keys[0].key)
+				balancingRequired, offset = tree.deleteHelper(tree.root.child[i+1], inorderSuccessorNode.keys[0].key)
 			}
 			i++ // changed where it was placed check here for likely bug
 		} else {
 			tree.root.keys[i] = inorderPredecessorNode.keys[len(inorderPredecessorNode.child)-1]
-			balancingRequired = tree.deleteHelper(tree.root.child[i], inorderPredecessorNode.keys[len(inorderPredecessorNode.child)-1].key)
+			balancingRequired, offset = tree.deleteHelper(tree.root.child[i], inorderPredecessorNode.keys[len(inorderPredecessorNode.child)-1].key)
 		}
 	}
 	// root handling of breaking tree conditions
@@ -282,27 +286,29 @@ func (tree *Btree) Delete(key string) {
 				tree.root = tree.root.child[0]
 			}
 		}
-
 	}
+
+	return offset
 }
 
-func (tree *Btree) deleteHelper(treeNode *node, key string) bool {
+func (tree *Btree) deleteHelper(treeNode *node, key string) (bool, int64) {
+	var offset int64 = -1
 	balancingRequired := false
 	i := 0
 	if !has(treeNode.keys, key) {
 		if treeNode.leaf {
-			return false // handle error future problem
+			return false, -1 // handle error future problem
 		}
 		i = 0
 		for i < len(treeNode.keys) && key > treeNode.keys[i].key {
 			i++
 		}
-		balancingRequired = tree.deleteHelper(treeNode.child[i], key)
+		balancingRequired, offset = tree.deleteHelper(treeNode.child[i], key)
 	} else if treeNode.leaf {
-		treeNode.keys = removeKeyFromSlice(treeNode.keys, key)
+		treeNode.keys, offset = removeKeyFromSlice(treeNode.keys, key)
 
 		// check if node is breaking the minElements rule
-		return len(treeNode.keys) < tree.minElements
+		return len(treeNode.keys) < tree.minElements, offset
 	} else {
 		i = 0
 		for i < len(treeNode.child) && key != treeNode.keys[i].key {
@@ -330,12 +336,12 @@ func (tree *Btree) deleteHelper(treeNode *node, key string) bool {
 				inorderSuccessorNode.keys = popFromSlice(inorderSuccessorNode.keys, 0)
 			} else {
 				treeNode.keys[i] = inorderSuccessorNode.keys[0]
-				balancingRequired = tree.deleteHelper(treeNode.child[i+1], inorderSuccessorNode.keys[0].key)
+				balancingRequired, offset = tree.deleteHelper(treeNode.child[i+1], inorderSuccessorNode.keys[0].key)
 			}
 			i++ // changed where it was placed check here for likely bug
 		} else {
 			treeNode.keys[i] = inorderPredecessorNode.keys[len(inorderPredecessorNode.child)-1]
-			balancingRequired = tree.deleteHelper(treeNode.child[i], inorderPredecessorNode.keys[len(inorderPredecessorNode.child)-1].key)
+			balancingRequired, offset = tree.deleteHelper(treeNode.child[i], inorderPredecessorNode.keys[len(inorderPredecessorNode.child)-1].key)
 		}
 	}
 	// root handling of breaking tree conditions
@@ -389,12 +395,12 @@ func (tree *Btree) deleteHelper(treeNode *node, key string) bool {
 			}
 
 			if len(treeNode.keys) < tree.minElements {
-				return true
+				return true, offset
 			}
 
 		}
 	}
-	return false
+	return false, offset
 }
 
 func (tree *Btree) ToArray() []keyStruct {
