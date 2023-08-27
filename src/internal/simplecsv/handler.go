@@ -12,6 +12,7 @@ import (
 type CsvHandler struct {
 	file        *os.File
 	reader      *bufio.Reader
+	FileName    string
 	Offset      int // the byte offset of the previous read if unknown / possible edge case will be -1
 	WriteOffset int
 }
@@ -25,7 +26,13 @@ func NewHandler(name string) (*CsvHandler, error) {
 
 	r := bufio.NewReader(f)
 
-	return &CsvHandler{file: f, reader: r}, nil
+	return &CsvHandler{
+		file:        f,
+		reader:      r,
+		FileName:    name,
+		Offset:      0,
+		WriteOffset: 0,
+	}, nil
 }
 
 // ReadLineAt returns the row that starts at the byte offset from the start and checks that the byte offset is at the start of a row
@@ -115,4 +122,8 @@ func (handler *CsvHandler) Append(input []string) {
 	if err != nil {
 		log.Fatalf("Write operation failed: %v", err)
 	}
+}
+
+func (handler *CsvHandler) Close() {
+	handler.file.Close()
 }
