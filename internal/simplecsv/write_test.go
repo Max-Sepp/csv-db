@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Max-Sepp/csv-indexing/src/internal/simplecsv"
+	"github.com/Max-Sepp/csv-indexing/internal/simplecsv"
 )
 
 func TestAppend(t *testing.T) {

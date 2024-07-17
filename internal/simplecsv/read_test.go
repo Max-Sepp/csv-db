@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/Max-Sepp/csv-indexing/src/internal/simplecsv"
+	"github.com/Max-Sepp/csv-indexing/internal/simplecsv"
 )
 
 func TestReadLineAtNormalData(t *testing.T) {

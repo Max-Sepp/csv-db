@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/Max-Sepp/csv-indexing/src/internal/btree"
-	"github.com/Max-Sepp/csv-indexing/src/internal/simplecsv"
+	"github.com/Max-Sepp/csv-indexing/internal/btree"
+	"github.com/Max-Sepp/csv-indexing/internal/simplecsv"
 )
 
 type Table struct {
