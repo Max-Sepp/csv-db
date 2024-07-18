@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"io"
+	"log"
 	"os"
 	"sync"
 
@@ -206,7 +207,12 @@ func (table *Table) Remove(field string, key string) error {
 			}
 		}
 	} else {
-		offset = int(table.btrees[indexOfBtree].Delete(key))
+		returnedOffset, err := table.btrees[indexOfBtree].Delete(key)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		offset = int(returnedOffset)
 	}
 
 	table.deleted[offset] = true
