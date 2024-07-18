@@ -31,7 +31,7 @@ func (tree *Btree) insertHelper(treeNode *node, key keyStruct) (rebalanceRequire
 
 		return tree.splitTreenode(treeNode)
 	} else {
-		placeToInsert := treeNode.findPlaceToInsertKey(key)
+		placeToInsert := treeNode.findKeyIndex(key.key)
 
 		rebalanceRequired, middleKey, rightNode := tree.insertHelper(treeNode.child[placeToInsert], key)
 
@@ -40,7 +40,7 @@ func (tree *Btree) insertHelper(treeNode *node, key keyStruct) (rebalanceRequire
 		}
 
 		// add returned key and right node
-		placeToInsert = treeNode.findPlaceToInsertKey(middleKey)
+		placeToInsert = treeNode.findKeyIndex(middleKey.key)
 		treeNode.keys = insertIntoSlice(treeNode.keys, placeToInsert, middleKey)
 		treeNode.child = insertIntoSlice(treeNode.child, placeToInsert+1, rightNode)
 
@@ -87,12 +87,4 @@ func (tree *Btree) splitTreenode(treeNode *node) (rebalanceRequired bool, middle
 	}
 
 	return true, middleKey, rightNode
-}
-
-func (treeNode *node) findPlaceToInsertKey(key keyStruct) int {
-	i := 0
-	for i < len(treeNode.keys) && key.key > treeNode.keys[i].key {
-		i++
-	}
-	return i
 }
