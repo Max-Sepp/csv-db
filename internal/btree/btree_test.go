@@ -41,7 +41,7 @@ func TestBtreeOrder5(t *testing.T) {
 		treeArray = B.ToArray()
 		for j, thing := range check {
 			if thing != treeArray[j] {
-				log.Fatalf("Failed at iteration: %d when inserting %s", j, item)
+				log.Fatalf("Failed at iteration: %d when deleting %s", j, item)
 			}
 		}
 	}
