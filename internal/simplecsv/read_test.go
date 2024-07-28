@@ -85,7 +85,7 @@ func TestConsecutiveReads(t *testing.T) {
 		t.Error(err)
 	}
 
-	r.Reset()
+	r.ResetReaderOffset()
 
 	for i := 0; true; i++ {
 

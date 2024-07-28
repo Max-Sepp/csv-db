@@ -17,7 +17,6 @@ type CsvHandler struct {
 	WriteOffset int
 }
 
-// NewHandler retuns a new CsvHandler. It returns the errors only of the opening of the file
 func NewHandler(name string) (*CsvHandler, error) {
 	f, err := os.OpenFile(name, os.O_APPEND|os.O_RDWR, 0755) // uncertain what filemode to use
 	if err != nil {
@@ -44,11 +43,11 @@ func (reader *CsvHandler) ReadLineAt(offset int64) ([]string, error) {
 		// check start of line
 		prevLineChar, err := reader.reader.ReadString('\n')
 		if err != nil {
-			reader.Reset()
+			reader.ResetReaderOffset()
 			return nil, err
 		}
 		if prevLineChar != "\n" {
-			reader.Reset()
+			reader.ResetReaderOffset()
 			return nil, errors.New("the byte offset does not begin with a row")
 		}
 	}
@@ -56,7 +55,7 @@ func (reader *CsvHandler) ReadLineAt(offset int64) ([]string, error) {
 	ret, err := reader.reader.ReadString('\n')
 
 	if err != nil {
-		reader.Reset()
+		reader.ResetReaderOffset()
 		return nil, err
 	}
 
@@ -67,12 +66,10 @@ func (reader *CsvHandler) ReadLineAt(offset int64) ([]string, error) {
 	return strings.Split(ret, ","), nil
 }
 
-// Reset sets the offset of the reader to 0
-func (reader *CsvHandler) Reset() {
+func (reader *CsvHandler) ResetReaderOffset() {
 	reader.setReadOffset(0)
 }
 
-// sets the read offset
 func (reader *CsvHandler) setReadOffset(offset int64) error {
 	_, err := reader.file.Seek(offset, io.SeekStart)
 

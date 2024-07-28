@@ -51,37 +51,41 @@ func deleteHelper(tree *Btree, parentNode *node, currentNode *node, key string) 
 
 		// check if immediate left sibling can be borrowed from
 		if indexOfChildNode > 0 && tree.nodeCanBeBorrowedFrom(parentNode.child[indexOfChildNode-1]) {
-			// rotating keys around to balance tree
+			rotateFromLeft(parentNode, indexOfChildNode)
 
-			// when functionin seperate into own function
-			parentNode.child[indexOfChildNode].keys = insertIntoSlice(parentNode.child[indexOfChildNode].keys, 0, parentNode.keys[indexOfChildNode-1])
-			parentNode.keys[indexOfChildNode-1] = parentNode.child[indexOfChildNode-1].keys[len(parentNode.child[indexOfChildNode-1].keys)-1]
-			parentNode.child[indexOfChildNode-1].keys = popFromSlice(parentNode.child[indexOfChildNode-1].keys, len(parentNode.child[indexOfChildNode-1].keys)-1)
-
-			if !parentNode.child[indexOfChildNode].leaf {
-				// handling child treeNode
-				parentNode.child[indexOfChildNode].child = insertIntoSlice(parentNode.child[indexOfChildNode].child, 0, parentNode.child[indexOfChildNode-1].child[len(parentNode.child[indexOfChildNode-1].child)-1])
-				parentNode.child[indexOfChildNode-1].child = popFromSlice(parentNode.child[indexOfChildNode-1].child, len(parentNode.child[indexOfChildNode-1].child)-1)
-			}
+			// check if immediate right sibling can be borrowed from
 		} else if indexOfChildNode+1 < len(parentNode.child) && tree.nodeCanBeBorrowedFrom(parentNode.child[indexOfChildNode+1]) {
-			// rotating keys areound to balance tree
-
-			// when functioning seperate into own function
-			parentNode.child[indexOfChildNode].keys = append(parentNode.child[indexOfChildNode].keys, parentNode.keys[indexOfChildNode])
-			parentNode.keys[indexOfChildNode] = parentNode.child[indexOfChildNode+1].keys[0]
-			parentNode.child[indexOfChildNode+1].keys = popFromSlice(parentNode.child[indexOfChildNode+1].keys, 0)
-
-			if !parentNode.child[indexOfChildNode].leaf {
-				// handling child treeNode
-				parentNode.child[indexOfChildNode].child = append(parentNode.child[indexOfChildNode].child, parentNode.child[indexOfChildNode+1].child[0])
-				parentNode.child[indexOfChildNode+1].child = popFromSlice(parentNode.child[indexOfChildNode+1].child, 0)
-			}
+			rotateFromRight(parentNode, indexOfChildNode)
 		} else {
 			handleProblemChild(parentNode, indexOfChildNode)
 		}
 	}
 
 	return rowPtr, nil
+}
+
+func rotateFromLeft(parentNode *node, indexOfChildNode int) {
+	parentNode.child[indexOfChildNode].keys = insertIntoSlice(parentNode.child[indexOfChildNode].keys, 0, parentNode.keys[indexOfChildNode-1])
+	parentNode.keys[indexOfChildNode-1] = parentNode.child[indexOfChildNode-1].keys[len(parentNode.child[indexOfChildNode-1].keys)-1]
+	parentNode.child[indexOfChildNode-1].keys = popFromSlice(parentNode.child[indexOfChildNode-1].keys, len(parentNode.child[indexOfChildNode-1].keys)-1)
+
+	if !parentNode.child[indexOfChildNode].leaf {
+		// handling child treeNode
+		parentNode.child[indexOfChildNode].child = insertIntoSlice(parentNode.child[indexOfChildNode].child, 0, parentNode.child[indexOfChildNode-1].child[len(parentNode.child[indexOfChildNode-1].child)-1])
+		parentNode.child[indexOfChildNode-1].child = popFromSlice(parentNode.child[indexOfChildNode-1].child, len(parentNode.child[indexOfChildNode-1].child)-1)
+	}
+}
+
+func rotateFromRight(parentNode *node, indexOfChildNode int) {
+	parentNode.child[indexOfChildNode].keys = append(parentNode.child[indexOfChildNode].keys, parentNode.keys[indexOfChildNode])
+	parentNode.keys[indexOfChildNode] = parentNode.child[indexOfChildNode+1].keys[0]
+	parentNode.child[indexOfChildNode+1].keys = popFromSlice(parentNode.child[indexOfChildNode+1].keys, 0)
+
+	if !parentNode.child[indexOfChildNode].leaf {
+		// handling child treeNode
+		parentNode.child[indexOfChildNode].child = append(parentNode.child[indexOfChildNode].child, parentNode.child[indexOfChildNode+1].child[0])
+		parentNode.child[indexOfChildNode+1].child = popFromSlice(parentNode.child[indexOfChildNode+1].child, 0)
+	}
 }
 
 func handleProblemChild(parentNode *node, problemChildIndex int) {
@@ -139,15 +143,6 @@ func (parentNode *node) indexOfChildNode(targetNode *node) int {
 	}
 	return i
 }
-
-// func (treeNode *node) getInorderPredecessor(keyIndex int) keyStruct {
-// 	inorderPredecessorNode := treeNode.child[keyIndex]
-// 	for !inorderPredecessorNode.leaf {
-// 		inorderPredecessorNode = inorderPredecessorNode.child[len(inorderPredecessorNode.child)-1]
-// 	}
-
-// 	return inorderPredecessorNode.keys[len(inorderPredecessorNode.keys)-1]
-// }
 
 func (treeNode *node) getInorderSuccessor(keyIndex int) keyStruct {
 	inorderSuccessorNode := treeNode.child[keyIndex+1]

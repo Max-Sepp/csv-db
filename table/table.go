@@ -124,7 +124,7 @@ func (table *Table) findIndexed(indexOfBtree int, key string) ([]string, error) 
 // fieldIndex is the index of the item we are searching for in the record i.e. is it the first second or third field in the record
 // returns nil if nothing is found
 func (table *Table) findFirstUnindexed(fieldIndex int, key string) ([]string, error) {
-	table.csvHandler.Reset()
+	table.csvHandler.ResetReaderOffset()
 
 	for {
 		record, err := table.csvHandler.Read()
@@ -186,7 +186,7 @@ func (table *Table) Remove(field string, key string) error {
 	if indexOfBtree == len(table.indexedFields) {
 		fieldIndex := i
 
-		table.csvHandler.Reset()
+		table.csvHandler.ResetReaderOffset()
 
 		for {
 			offset = table.csvHandler.Offset
