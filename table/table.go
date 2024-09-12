@@ -45,12 +45,7 @@ func NewTable(fileName string, fieldsToIndex []string) (*Table, error) {
 		indexedFields = append(indexedFields, index)
 	}
 
-	// generate btrees
-	btrees := make([]*btree.Btree, 0, len(fieldsToIndex))
-
-	for i := 0; i < len(fieldsToIndex); i++ {
-		btrees = append(btrees, btree.New(5))
-	}
+	btrees := generateBtrees(len(fieldsToIndex))
 
 	for {
 		offset := csvHandler.Offset
@@ -271,4 +266,14 @@ func findInSlice[T comparable](slice []T, value T) (int, error) {
 	}
 
 	return -1, errors.New("can not find item in the slice")
+}
+
+func generateBtrees(numBtrees int) []*btree.Btree {
+	btrees := make([]*btree.Btree, 0, numBtrees)
+
+	for i := 0; i < numBtrees; i++ {
+		btrees = append(btrees, btree.New(5))
+	}
+
+	return btrees
 }
