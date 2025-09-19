@@ -48,7 +48,6 @@ func toArray(treeNode *node) []keyStruct {
 	}
 }
 
-// TODO: give this a better more descriptive name
 func (treeNode *node) findKeyIndex(key string) int {
 	i := 0
 	for i < len(treeNode.keys) && key > treeNode.keys[i].key {
