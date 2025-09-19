@@ -1,7 +1,6 @@
 package btree
 
 import (
-	"log"
 	"testing"
 )
 
@@ -24,7 +23,7 @@ func TestBtreeOrder5(t *testing.T) {
 
 		for i, thing := range check {
 			if thing != treeArray[i] {
-				log.Fatalf("Failed at iteration: %d when inserting %s", i, item)
+				t.Fatalf("Failed at iteration: %d when inserting %s", i, item)
 			}
 		}
 	}
@@ -41,7 +40,7 @@ func TestBtreeOrder5(t *testing.T) {
 		treeArray = B.ToArray()
 		for j, thing := range check {
 			if thing != treeArray[j] {
-				log.Fatalf("Failed at iteration: %d when deleting %s", j, item)
+				t.Fatalf("Failed at iteration: %d when deleting %s", j, item)
 			}
 		}
 	}
@@ -66,7 +65,7 @@ func TestBtreeOrder3(t *testing.T) {
 
 		for i, thing := range check {
 			if thing != treeArray[i] {
-				log.Fatalf("Failed at iteration: %d when inserting %s", i, item)
+				t.Fatalf("Failed at iteration: %d when inserting %s", i, item)
 			}
 		}
 	}
@@ -83,7 +82,7 @@ func TestBtreeOrder3(t *testing.T) {
 		treeArray = B.ToArray()
 		for j, thing := range check {
 			if thing != treeArray[j] {
-				log.Fatalf("Failed at iteration: %d when inserting %s", j, item)
+				t.Fatalf("Failed at iteration: %d when inserting %s", j, item)
 			}
 		}
 	}

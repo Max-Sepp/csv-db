@@ -48,13 +48,11 @@ func deleteHelper(tree *Btree, parentNode *node, currentNode *node, key string) 
 	}
 
 	if tree.violatesMinimumNumberKeys(currentNode) && parentNode != nil {
-
-		// check if immediate left sibling can be borrowed from
 		if indexOfChildNode > 0 && tree.nodeCanBeBorrowedFrom(parentNode.child[indexOfChildNode-1]) {
+			// check if immediate left sibling can be borrowed from
 			rotateFromLeft(parentNode, indexOfChildNode)
-
-			// check if immediate right sibling can be borrowed from
 		} else if indexOfChildNode+1 < len(parentNode.child) && tree.nodeCanBeBorrowedFrom(parentNode.child[indexOfChildNode+1]) {
+			// check if immediate right sibling can be borrowed from
 			rotateFromRight(parentNode, indexOfChildNode)
 		} else {
 			handleProblemChild(parentNode, indexOfChildNode)
