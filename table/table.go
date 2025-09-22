@@ -12,6 +12,9 @@ import (
 )
 
 type Table struct {
+	// This Table implementation is intentionally simple for demonstration purposes.
+	// A proper database would use more sophisticated file handling.
+	// For example using memory-mapped files or buffering writes to reduce disk I/O.
 	csvHandler    *simplecsv.CsvHandler
 	fields        []string
 	indexedFields []int // holds the indexs of the fields that are indexed
