@@ -17,7 +17,12 @@ type Btree struct {
 	minElements int
 }
 
+// order must be at least 3, smaller orders would split nodes into empty nodes
 func New(order int) *Btree {
+	if order < 3 {
+		panic("btree: order must be at least 3")
+	}
+
 	tree := new(Btree)
 	tree.maxElements = order - 1
 	tree.minElements = tree.maxElements / 2

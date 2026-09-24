@@ -39,8 +39,8 @@ func (tree *Btree) insertHelper(treeNode *node, key keyStruct) (rebalanceRequire
 			return false, keyStruct{}, nil
 		}
 
-		// add returned key and right node
-		placeToInsert = treeNode.findKeyIndex(middleKey.key)
+		// add returned key and right node next to the child that was split
+		// (searching for middleKey again can pick the wrong place when there are duplicate keys)
 		treeNode.keys = insertIntoSlice(treeNode.keys, placeToInsert, middleKey)
 		treeNode.child = insertIntoSlice(treeNode.child, placeToInsert+1, rightNode)
 
