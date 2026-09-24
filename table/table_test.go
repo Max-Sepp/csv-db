@@ -3,6 +3,7 @@ package db
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -100,4 +101,61 @@ func EqualStringSlice(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func newTestTable(t *testing.T, content string) *Table {
+	fileName := filepath.Join(t.TempDir(), "test.csv")
+
+	if err := os.WriteFile(fileName, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err := NewTable(fileName, []string{"id"})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return db
+}
+
+func TestNewTableRejectsShortRow(t *testing.T) {
+	fileName := filepath.Join(t.TempDir(), "test.csv")
+
+	if err := os.WriteFile(fileName, []byte("id,first_name\n1,Ann\n2\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := NewTable(fileName, []string{"id"}); err == nil {
+		t.Error("NewTable accepted a row with too few fields")
+	}
+}
+
+func TestInsertRejectsInvalidRecords(t *testing.T) {
+	db := newTestTable(t, "id,first_name\n1,Ann\n")
+
+	invalid := [][]string{
+		{"2"},
+		{"2", "Bob", "extra"},
+		{"2", "Bob,Jr"},
+		{"2", "Bob\nJr"},
+	}
+
+	for _, record := range invalid {
+		if err := db.Insert(record); err == nil {
+			t.Errorf("Insert(%q) should be rejected", record)
+		}
+	}
+}
+
+func TestUnknownField(t *testing.T) {
+	db := newTestTable(t, "id,first_name\n1,Ann\n")
+
+	if _, err := db.FindFirst("nope", "1"); err == nil {
+		t.Error("FindFirst on an unknown field should return an error")
+	}
+
+	if err := db.Remove("nope", "1"); err == nil {
+		t.Error("Remove on an unknown field should return an error")
+	}
 }
