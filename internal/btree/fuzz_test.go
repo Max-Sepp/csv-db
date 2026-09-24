@@ -9,6 +9,10 @@ import (
 // a small number of keys so that the fuzzer creates lots of duplicate keys
 const fuzzNumKeys = 8
 
+// the tree is fully checked after every operation so the cost grows with the square of the number of
+// operations, long inputs would be slow enough for the fuzzer to report them as hung
+const fuzzMaxOps = 200
+
 func fuzzKey(b byte) string {
 	return fmt.Sprintf("k%d", int(b)%fuzzNumKeys)
 }
@@ -31,7 +35,7 @@ func FuzzBtree(f *testing.F) {
 			model := map[string][]int64{}
 			var nextRowPtr int64
 
-			for i := 0; i+1 < len(ops) && i < 2000; i += 2 {
+			for i := 0; i+1 < len(ops) && i < 2*fuzzMaxOps; i += 2 {
 				op, arg := ops[i], ops[i+1]
 				key := fuzzKey(arg)
 
@@ -106,24 +110,23 @@ func checkTree(t *testing.T, tree *Btree, model map[string][]int64) {
 
 	// contents must be in order and hold exactly the entries of the model
 	array := tree.ToArray()
-	got := []string{}
-	for i, entry := range array {
-		if i > 0 && array[i-1].key > entry.key {
-			t.Fatalf("ToArray is not sorted: %q comes before %q", array[i-1].key, entry.key)
+	for i := 1; i < len(array); i++ {
+		if array[i-1].key > array[i].key {
+			t.Fatalf("ToArray is not sorted: %q comes before %q", array[i-1].key, array[i].key)
 		}
-		got = append(got, fmt.Sprintf("%s/%d", entry.key, entry.rowPtr))
 	}
 
-	want := []string{}
+	got := append([]keyStruct{}, array...)
+	want := []keyStruct{}
 	for key, rowPtrs := range model {
 		for _, rowPtr := range rowPtrs {
-			want = append(want, fmt.Sprintf("%s/%d", key, rowPtr))
+			want = append(want, keyStruct{key: key, rowPtr: rowPtr})
 		}
 	}
 
-	sort.Strings(got)
-	sort.Strings(want)
-	if fmt.Sprint(got) != fmt.Sprint(want) {
+	sortEntries(got)
+	sortEntries(want)
+	if !equalEntries(got, want) {
 		t.Fatalf("tree contents differ from model\ngot:  %v\nwant: %v", got, want)
 	}
 
@@ -138,6 +141,27 @@ func checkTree(t *testing.T, tree *Btree, model map[string][]int64) {
 			t.Fatalf("Find(%q) returned (%q, %d) which is not in the model: %v", key, foundKey, rowPtr, model[key])
 		}
 	}
+}
+
+func sortEntries(entries []keyStruct) {
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].key != entries[j].key {
+			return entries[i].key < entries[j].key
+		}
+		return entries[i].rowPtr < entries[j].rowPtr
+	})
+}
+
+func equalEntries(a, b []keyStruct) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // checkNode checks the B-tree invariants of the subtree at treeNode where every key has to be

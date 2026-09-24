@@ -14,15 +14,46 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v7
       with:
-        go-version: '1.20'
+        go-version-file: go.mod
 
     - name: Build
       run: go build -v ./...
 
+    # also runs the fuzz tests on their seed inputs and saved failing inputs
     - name: Test
       run: go test -v ./...
+
+  fuzz:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: FuzzBtree
+            package: ./internal/btree
+          - target: FuzzTable
+            package: ./table
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Set up Go
+      uses: actions/setup-go@v7
+      with:
+        go-version-file: go.mod
+
+    - name: Fuzz
+      run: go test -run '^$' -fuzz '^${{ matrix.target }}$' -fuzztime 60s ${{ matrix.package }}
+
+    # the failing input is written to testdata/fuzz, add it to the repo so go test checks it from then on
+    - name: Upload failing inputs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: fuzz-failures-${{ matrix.target }}
+        path: ${{ matrix.package }}/testdata/fuzz
