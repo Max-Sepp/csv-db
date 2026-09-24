@@ -11,7 +11,7 @@ func (tree *Btree) findHelper(treeNode *node, keyStr string) (bool, string, int6
 		i++
 	}
 
-	if keyStr == treeNode.keys[i].key {
+	if i < len(treeNode.keys) && keyStr == treeNode.keys[i].key {
 		return true, treeNode.keys[i].key, treeNode.keys[i].rowPtr
 	} else if treeNode.leaf {
 		return false, "", 0

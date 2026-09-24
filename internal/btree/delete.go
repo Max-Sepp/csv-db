@@ -1,46 +1,88 @@
 package btree
 
+import "errors"
+
+var ErrKeyNotFound = errors.New("key not found in btree")
+
+// Delete removes an entry with the given key and returns its row pointer
 func (tree *Btree) Delete(key string) (int64, error) {
-	rowPtr, err := deleteHelper(tree, nil, tree.root, key)
+	return tree.deleteEntry(key, nil)
+}
+
+// DeleteEntry removes the entry with the given key and row pointer.
+// This is needed when keys are not unique so the correct entry is removed.
+func (tree *Btree) DeleteEntry(key string, rowPtr int64) error {
+	_, err := tree.deleteEntry(key, &rowPtr)
+	return err
+}
+
+func (tree *Btree) deleteEntry(key string, rowPtr *int64) (int64, error) {
+	deletedRowPtr, err := deleteHelper(tree, nil, tree.root, key, rowPtr)
 
 	if err != nil {
-		return rowPtr, err
+		return deletedRowPtr, err
 	}
 
 	for len(tree.root.keys) == 0 && len(tree.root.child) != 0 {
 		tree.root = tree.root.child[0]
 	}
 
-	return rowPtr, err
+	return deletedRowPtr, err
 }
 
-func deleteHelper(tree *Btree, parentNode *node, currentNode *node, key string) (int64, error) {
+// deleteHelper removes an entry matching key (and targetRowPtr if it is not nil) from the subtree at currentNode.
+// If no entry matches the subtree is left unchanged and ErrKeyNotFound is returned.
+func deleteHelper(tree *Btree, parentNode *node, currentNode *node, key string, targetRowPtr *int64) (int64, error) {
 	var rowPtr int64 = -1
 	var indexOfChildNode int
 	var err error
-
-	// This is either the location of the treeNode or the index of the child which should be checked next to find the treeNode
-	keyIndex := currentNode.findKeyIndex(key)
 
 	if parentNode != nil {
 		indexOfChildNode = parentNode.indexOfChildNode(currentNode)
 	}
 
-	if keyIndex >= len(currentNode.keys) || currentNode.keys[keyIndex].key != key {
-		rowPtr, err = deleteHelper(tree, currentNode, currentNode.child[keyIndex], key)
+	matches := func(k keyStruct) bool {
+		return k.key == key && (targetRowPtr == nil || k.rowPtr == *targetRowPtr)
+	}
 
-		if err != nil {
-			return -1, err
+	// Duplicate keys can be spread over several keys of this node and the children between them,
+	// so every position from the first key >= key up to the last key == key has to be checked.
+	keyIndex := currentNode.findKeyIndex(key)
+	found := false
+	for {
+		if keyIndex < len(currentNode.keys) && matches(currentNode.keys[keyIndex]) {
+			found = true
+			break
 		}
 
-	} else if currentNode.leaf {
-		currentNode.keys, rowPtr = removeKeyFromSlice(currentNode.keys, key)
-	} else {
+		if !currentNode.leaf {
+			rowPtr, err = deleteHelper(tree, currentNode, currentNode.child[keyIndex], key, targetRowPtr)
+			if err == nil {
+				break
+			}
+			if err != ErrKeyNotFound {
+				return -1, err
+			}
+		}
+
+		if keyIndex >= len(currentNode.keys) || currentNode.keys[keyIndex].key != key {
+			return -1, ErrKeyNotFound
+		}
+		keyIndex++
+	}
+
+	if found && currentNode.leaf {
+		rowPtr = currentNode.keys[keyIndex].rowPtr
+		currentNode.keys = popFromSlice(currentNode.keys, keyIndex)
+	} else if found {
+		rowPtr = currentNode.keys[keyIndex].rowPtr
+
 		inorderSuccessor := currentNode.getInorderSuccessor(keyIndex)
 
 		currentNode.keys[keyIndex] = inorderSuccessor
 
-		rowPtr, err = deleteHelper(tree, currentNode, currentNode.child[keyIndex+1], inorderSuccessor.key)
+		// remove exactly the successor entry, not just any entry with the same key
+		_, err = deleteHelper(tree, currentNode, currentNode.child[keyIndex+1], inorderSuccessor.key, &inorderSuccessor.rowPtr)
 
 		if err != nil {
 			return -1, err
@@ -110,19 +152,6 @@ func handleProblemChild(parentNode *node, problemChildIndex int) {
 
 		parentNode.child = popFromSlice(parentNode.child, problemChildIndex+1)
 	}
-}
-
-func removeKeyFromSlice(slice []keyStruct, key string) ([]keyStruct, int64) {
-	i := 0
-	for slice[i].key != key {
-		i++
-		if i >= len(slice) {
-			return slice, -1
-		}
-	}
-
-	offset := slice[i].rowPtr
-	return popFromSlice(slice, i), offset
 }
 
 func (btree *Btree) violatesMinimumNumberKeys(treeNode *node) bool {
