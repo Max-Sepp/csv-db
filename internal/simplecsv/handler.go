@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"io"
-	"log"
 	"os"
 	"strings"
 )
@@ -38,7 +37,10 @@ func NewHandler(name string) (*CsvHandler, error) {
 func (reader *CsvHandler) ReadLineAt(offset int64) ([]string, error) {
 	if offset != 0 {
 		// check if previous char is endline so this is a complete line
-		reader.setReadOffset(offset - 1)
+		if err := reader.setReadOffset(offset - 1); err != nil {
+			reader.ResetReaderOffset()
+			return nil, err
+		}
 
 		// check start of line
 		prevLineChar, err := reader.reader.ReadString('\n')
@@ -66,8 +68,8 @@ func (reader *CsvHandler) ReadLineAt(offset int64) ([]string, error) {
 	return strings.Split(ret, ","), nil
 }
 
-func (reader *CsvHandler) ResetReaderOffset() {
-	reader.setReadOffset(0)
+func (reader *CsvHandler) ResetReaderOffset() error {
+	return reader.setReadOffset(0)
 }
 
 func (reader *CsvHandler) setReadOffset(offset int64) error {
@@ -100,7 +102,32 @@ func (reader *CsvHandler) Read() ([]string, error) {
 	return strings.Split(ret, ","), err
 }
 
-func (handler *CsvHandler) Append(input []string) {
+// EnsureTrailingNewline appends a newline if the file does not end with one,
+// otherwise the next Append would be joined onto the last row
+func (handler *CsvHandler) EnsureTrailingNewline() error {
+	info, err := handler.file.Stat()
+	if err != nil {
+		return err
+	}
+
+	if info.Size() == 0 {
+		return nil
+	}
+
+	lastChar := make([]byte, 1)
+	if _, err := handler.file.ReadAt(lastChar, info.Size()-1); err != nil {
+		return err
+	}
+
+	if lastChar[0] == '\n' {
+		return nil
+	}
+
+	_, err = handler.file.Write([]byte{'\n'})
+	return err
+}
+
+func (handler *CsvHandler) Append(input []string) error {
 	data := []byte{}
 
 	for i, v := range input {
@@ -112,13 +139,15 @@ func (handler *CsvHandler) Append(input []string) {
 
 	data = append(data, '\n')
 
-	handler.WriteOffset = handler.WriteOffset + len(data)
-
 	_, err := handler.file.Write(data)
 
 	if err != nil {
-		log.Fatalf("Write operation failed: %v", err)
+		return err
 	}
+
+	handler.WriteOffset = handler.WriteOffset + len(data)
+
+	return nil
 }
 
 func (handler *CsvHandler) Close() {
